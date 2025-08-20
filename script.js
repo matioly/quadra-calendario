@@ -28,7 +28,8 @@ document.addEventListener('DOMContentLoaded', function () {
           const events = data.map(item => ({
             id: item.id,
             title: item.title,
-            start: item.start   // 🔑 precisa ser date/timestamp no Supabase!
+            start: item.start,   // formato YYYY-MM-DD
+            allDay: true         // 👈 garante exibição no quadrado do dia
           }));
           console.log("Eventos carregados do Supabase:", events);
           successCallback(events);
