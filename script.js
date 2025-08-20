@@ -6,9 +6,9 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 document.addEventListener('DOMContentLoaded', function () {
-  const calendarEl = document.getElementById('calendar');
+  var calendarEl = document.getElementById('calendar');
 
-  const calendar = new FullCalendar.Calendar(calendarEl, {
+  var calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
     selectable: true,
     headerToolbar: {
@@ -16,52 +16,64 @@ document.addEventListener('DOMContentLoaded', function () {
       center: 'title',
       right: 'dayGridMonth,timeGridWeek'
     },
-    events: async function(info, successCallback, failureCallback) {
+
+    // 🔹 Buscar eventos do Supabase
+    events: async function (info, successCallback, failureCallback) {
       try {
-        // Busca todos os registros no Supabase
         let { data, error } = await supabase.from('reservas').select('*');
         if (error) {
           console.error(error);
           failureCallback(error);
-          return;
+        } else {
+          const events = data.map(item => ({
+            id: item.id,
+            title: item.title,
+            start: item.start   // 🔑 precisa ser date/timestamp no Supabase!
+          }));
+          console.log("Eventos carregados do Supabase:", events);
+          successCallback(events);
         }
-
-        // Mapeia para FullCalendar
-        const events = data.map(item => ({
-          id: item.id,
-          title: item.title,             // o que será exibido
-          start: item.start             // precisa ser YYYY-MM-DD ou ISO
-        }));
-
-        successCallback(events);
-
       } catch (err) {
         console.error(err);
         failureCallback(err);
       }
     },
-    dateClick: async function(info) {
-      let texto = prompt('Digite hora e nome da reserva (ex: 08:45 - Evandro):');
-      if (texto) {
+
+    // 🔹 Clique em uma data para adicionar reserva
+    dateClick: async function (info) {
+      let title = prompt('Digite o nome da reserva:');
+      if (title) {
         try {
           const { error } = await supabase.from('reservas').insert([
-            {
-              title: texto,
-              start: info.dateStr        // salva a data do dia clicado
-            }
+            { title: title, start: info.dateStr } // grava no formato YYYY-MM-DD
           ]);
           if (error) {
             alert("Erro ao salvar: " + error.message);
           } else {
-            calendar.refetchEvents(); // recarrega os eventos do banco
+            alert("Reserva feita!");
+            calendar.refetchEvents(); // Recarrega os eventos
           }
         } catch (err) {
           alert("Erro ao salvar: " + err.message);
         }
       }
     },
+
+    // 🔹 Mostrar o texto dentro do quadrado do dia
     eventContent: function(arg) {
-      return { html: `<div style="font-size:12px; color:#ffffff; background-color:#007bff; border-radius:4px; padding:2px;">${arg.event.title}</div>` };
+      return {
+        html: `<div style="
+          font-size:12px;
+          color:#fff;
+          background-color:#007bff;
+          border-radius:4px;
+          padding:2px;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;">
+            ${arg.event.title}
+          </div>`
+      };
     }
   });
 
