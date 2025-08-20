@@ -17,38 +17,46 @@ document.addEventListener('DOMContentLoaded', function () {
       right: 'dayGridMonth,timeGridWeek'
     },
     events: async function (info, successCallback, failureCallback) {
-      // Busca todas as reservas no Supabase
-      let { data, error } = await supabase.from('reservas').select('*');
-      if (error) {
-        console.error(error);
-        failureCallback(error);
-      } else {
-        // Mapeia os eventos para garantir que title e start estão corretos
-        const events = data.map(item => ({
-          id: item.id,
-          title: item.title,
-          start: item.start
-        }));
-        successCallback(events);
+      try {
+        let { data, error } = await supabase.from('reservas').select('*');
+        if (error) {
+          console.error(error);
+          failureCallback(error);
+        } else {
+          // Converte start para Date, garantindo que o FullCalendar exiba corretamente
+          const events = data.map(item => ({
+            id: item.id,
+            title: item.title,
+            start: new Date(item.start)
+          }));
+          console.log("Eventos carregados do Supabase:", events);
+          successCallback(events);
+        }
+      } catch (err) {
+        console.error(err);
+        failureCallback(err);
       }
     },
     dateClick: async function (info) {
       let title = prompt('Digite o nome da reserva:');
       if (title) {
-        // Salva no banco
-        const { error } = await supabase.from('reservas').insert([
-          { title: title, start: info.dateStr }
-        ]);
-        if (error) {
-          alert("Erro ao salvar: " + error.message);
-        } else {
-          alert("Reserva feita!");
-          calendar.refetchEvents(); // Recarrega do banco
+        try {
+          const { error } = await supabase.from('reservas').insert([
+            { title: title, start: info.dateStr }
+          ]);
+          if (error) {
+            alert("Erro ao salvar: " + error.message);
+          } else {
+            alert("Reserva feita!");
+            calendar.refetchEvents(); // Recarrega do banco
+          }
+        } catch (err) {
+          alert("Erro ao salvar: " + err.message);
         }
       }
     },
     eventContent: function(arg) {
-      // Personaliza o HTML dentro do quadrado do dia
+      // Personaliza o conteúdo dentro do quadrado do dia
       return { html: `<div style="font-size:12px; color:#ffffff; background-color:#007bff; border-radius:4px; padding:2px;">${arg.event.title}</div>` };
     }
   });
