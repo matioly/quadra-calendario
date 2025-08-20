@@ -18,39 +18,42 @@ document.addEventListener('DOMContentLoaded', function () {
     },
     events: async function(info, successCallback, failureCallback) {
       try {
+        // Busca todos os registros no Supabase
         let { data, error } = await supabase.from('reservas').select('*');
         if (error) {
           console.error(error);
           failureCallback(error);
-        } else {
-          // Converte start para Date (FullCalendar precisa de data válida)
-          const events = data.map(item => ({
-            id: item.id,
-            title: item.title, // aqui mostra "08:45 - Evandro"
-            start: new Date(item.start) // precisa ser YYYY-MM-DD ou ISO 8601
-          }));
-          successCallback(events);
+          return;
         }
+
+        // Mapeia para FullCalendar
+        const events = data.map(item => ({
+          id: item.id,
+          title: item.title,             // o que será exibido
+          start: item.start             // precisa ser YYYY-MM-DD ou ISO
+        }));
+
+        successCallback(events);
+
       } catch (err) {
         console.error(err);
         failureCallback(err);
       }
     },
     dateClick: async function(info) {
-      let horaNome = prompt('Digite hora e nome da reserva (ex: 08:45 - Evandro):');
-      if (horaNome) {
+      let texto = prompt('Digite hora e nome da reserva (ex: 08:45 - Evandro):');
+      if (texto) {
         try {
           const { error } = await supabase.from('reservas').insert([
             {
-              title: horaNome,        // o que vai aparecer no quadrado
-              start: info.dateStr      // precisa ser YYYY-MM-DD
+              title: texto,
+              start: info.dateStr        // salva a data do dia clicado
             }
           ]);
           if (error) {
             alert("Erro ao salvar: " + error.message);
           } else {
-            alert("Reserva feita!");
-            calendar.refetchEvents();
+            calendar.refetchEvents(); // recarrega os eventos do banco
           }
         } catch (err) {
           alert("Erro ao salvar: " + err.message);
