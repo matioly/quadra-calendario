@@ -2,7 +2,6 @@
 const SUPABASE_URL = "https://ykaharechusbluyuiflb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrYWhhcmVjaHVzYmx1eXVpZmxiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NDc3OTMsImV4cCI6MjA3MTIyMzc5M30.lhO87GXrhOg_MzqptkBITcW2nZ1Zn5HpM3BNWGHSmV8";
 
-// Criar cliente Supabase via CDN
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -28,10 +27,10 @@ document.addEventListener('DOMContentLoaded', function () {
           const events = data.map(item => ({
             id: item.id,
             title: item.title,
-            start: item.start,   // formato YYYY-MM-DD
-            allDay: true         // 👈 garante exibição no quadrado do dia
+            start: item.start,  // já vem YYYY-MM-DD
+            allDay: true        // 👈 força ser evento de dia inteiro
           }));
-          console.log("Eventos carregados do Supabase:", events);
+          console.log("Eventos carregados:", events);
           successCallback(events);
         }
       } catch (err) {
@@ -40,19 +39,19 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     },
 
-    // 🔹 Clique em uma data para adicionar reserva
+    // 🔹 Clique em uma data para salvar no Supabase
     dateClick: async function (info) {
       let title = prompt('Digite o nome da reserva:');
       if (title) {
         try {
           const { error } = await supabase.from('reservas').insert([
-            { title: title, start: info.dateStr } // grava no formato YYYY-MM-DD
+            { title: title, start: info.dateStr } // YYYY-MM-DD
           ]);
           if (error) {
             alert("Erro ao salvar: " + error.message);
           } else {
             alert("Reserva feita!");
-            calendar.refetchEvents(); // Recarrega os eventos
+            calendar.refetchEvents();
           }
         } catch (err) {
           alert("Erro ao salvar: " + err.message);
@@ -60,18 +59,19 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     },
 
-    // 🔹 Mostrar o texto dentro do quadrado do dia
+    // 🔹 Exibir todos os eventos no quadrado do dia
     eventContent: function(arg) {
       return {
         html: `<div style="
-          font-size:12px;
+          font-size:11px;
           color:#fff;
-          background-color:#007bff;
+          background:#007bff;
           border-radius:4px;
-          padding:2px;
+          margin:1px 0;
+          padding:1px 3px;
+          white-space:nowrap;
           overflow:hidden;
-          text-overflow:ellipsis;
-          white-space:nowrap;">
+          text-overflow:ellipsis;">
             ${arg.event.title}
           </div>`
       };
