@@ -1,79 +1,65 @@
-// 🔑 Configuração do Supabase
-const SUPABASE_URL = "https://ykaharechusbluyuiflb.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrYWhhcmVjaHVzYmx1eXVpZmxiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NDc3OTMsImV4cCI6MjA3MTIyMzc5M30.lhO87GXrhOg_MzqptkBITcW2nZ1Zn5HpM3BNWGHSmV8";
+// script.js
+const { createClient } = supabase;
+const supabaseUrl = "https://SEU-PROJETO.supabase.co";
+const supabaseKey = "SEU-ANON-KEY";
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-// Criar cliente Supabase via CDN
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+document.addEventListener("DOMContentLoaded", async function () {
+  const calendarEl = document.getElementById("calendar");
 
-document.addEventListener('DOMContentLoaded', function () {
-  var calendarEl = document.getElementById('calendar');
-
-  var calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: "dayGridMonth",
     selectable: true,
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth,timeGridWeek'
-    },
+    locale: "pt-br",
 
-    // 🔹 Buscar eventos do Supabase
+    // carregar os eventos do banco
     events: async function (info, successCallback, failureCallback) {
       try {
-        let { data, error } = await supabase.from('reservas').select('*');
-        if (error) {
-          console.error(error);
-          failureCallback(error);
-        } else {
-          const events = data.map(item => ({
-            id: item.id,
-            title: item.title,
-            start: item.start   // 🔑 precisa ser date/timestamp no Supabase!
-          }));
-          console.log("Eventos carregados do Supabase:", events);
-          successCallback(events);
-        }
+        let { data, error } = await supabaseClient
+          .from("reservas")
+          .select("id, title, start");
+
+        if (error) throw error;
+
+        // converter os dados para o formato que o FullCalendar entende
+        const eventos = data.map(evento => ({
+          id: evento.id,
+          title: evento.title,
+          start: evento.start  // já está em formato DATE
+        }));
+
+        successCallback(eventos);
       } catch (err) {
-        console.error(err);
+        console.error("Erro ao carregar eventos:", err.message);
         failureCallback(err);
       }
     },
 
-    // 🔹 Clique em uma data para adicionar reserva
+    // ao clicar em um dia
     dateClick: async function (info) {
-      let title = prompt('Digite o nome da reserva:');
+      const title = prompt("Digite o nome da reserva:");
       if (title) {
         try {
-          const { error } = await supabase.from('reservas').insert([
-            { title: title, start: info.dateStr } // grava no formato YYYY-MM-DD
-          ]);
-          if (error) {
-            alert("Erro ao salvar: " + error.message);
-          } else {
-            alert("Reserva feita!");
-            calendar.refetchEvents(); // Recarrega os eventos
-          }
+          let { data, error } = await supabaseClient
+            .from("reservas")
+            .insert([{ title, start: info.dateStr }])
+            .select();
+
+          if (error) throw error;
+
+          // adicionar no calendário sem precisar recarregar
+          calendar.addEvent({
+            id: data[0].id,
+            title: data[0].title,
+            start: data[0].start
+          });
+
+          alert("Reserva salva!");
         } catch (err) {
-          alert("Erro ao salvar: " + err.message);
+          console.error("Erro ao salvar:", err.message);
+          alert("Erro ao salvar reserva");
         }
       }
-    },
-
-    // 🔹 Mostrar o texto dentro do quadrado do dia
-    eventContent: function(arg) {
-      return {
-        html: `<div style="
-          font-size:12px;
-          color:#fff;
-          background-color:#007bff;
-          border-radius:4px;
-          padding:2px;
-          overflow:hidden;
-          text-overflow:ellipsis;
-          white-space:nowrap;">
-            ${arg.event.title}
-          </div>`
-      };
     }
   });
 
