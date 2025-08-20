@@ -7,6 +7,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 document.addEventListener('DOMContentLoaded', function () {
   var calendarEl = document.getElementById('calendar');
+
   var calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
     selectable: true,
@@ -22,7 +23,13 @@ document.addEventListener('DOMContentLoaded', function () {
         console.error(error);
         failureCallback(error);
       } else {
-        successCallback(data);
+        // Mapeia os eventos para garantir que title e start estão corretos
+        const events = data.map(item => ({
+          id: item.id,
+          title: item.title,
+          start: item.start
+        }));
+        successCallback(events);
       }
     },
     dateClick: async function (info) {
@@ -39,7 +46,12 @@ document.addEventListener('DOMContentLoaded', function () {
           calendar.refetchEvents(); // Recarrega do banco
         }
       }
+    },
+    eventContent: function(arg) {
+      // Personaliza o HTML dentro do quadrado do dia
+      return { html: `<div style="font-size:12px; color:#ffffff; background-color:#007bff; border-radius:4px; padding:2px;">${arg.event.title}</div>` };
     }
   });
+
   calendar.render();
 });
